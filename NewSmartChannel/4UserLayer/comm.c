@@ -51,6 +51,8 @@ QUEUE_TO_HOST_T gQueueToHost;    //¶¨ÒåÒ»¸ö½á¹¹ÌåÓÃÓÚÏûÏ¢¶ÓÁĞ£¬ÓÃÓÚÍ¬²½´¦ÀíÏàÓ¦Ê
 SemaphoreHandle_t gxMutex = NULL;
 //SemaphoreHandle_t gBinarySem_Handle = NULL;
 TaskHandle_t xHandleTaskQueryMotor = NULL;      //µç»ú×´Ì¬²éÑ¯
+TaskHandle_t xHandleTaskMotor = NULL;    //µç»ú¿ØÖÆ
+TaskHandle_t xHandleTaskRs485 = NULL;    //BÃÅµç»ú
 
 
 RECVHOST_T gRecvHost;
@@ -221,7 +223,8 @@ void deal_rx_data(void)
             {
 				//×ª´æJSONÊı¾İ°ü
                 memcpy(json_buf,(const char*)gRecvHost.RxdBuf+1,gRecvHost.RxdTotalLen-4);
-                DBG("recv json data = : %s\r\n",json_buf);
+                
+//                DBG("recv json data = : %s\r\n\r\n",json_buf);
 
                 //½âÎöJSONÊı¾İ°ü              
                 if(parseJSON(json_buf,&cmd_rx) == NO_ERR)
@@ -508,9 +511,11 @@ static uint16_t  packetDeviceInfo(uint8_t *command_data)
 
 void send_to_device(CMD_RX_T *cmd_rx)
 {
+    BaseType_t xReturn = pdPASS;/* ¶¨ÒåÒ»¸ö´´½¨ĞÅÏ¢·µ»ØÖµ£¬Ä¬ÈÏÎªpdPASS */
     uint16_t i = 0;
     uint8_t TxdBuf[JSON_PACK_MAX]={0};
-    uint8_t tmpBuf[JSON_PACK_MAX] = {0};  
+    uint8_t tmpBuf[JSON_PACK_MAX] = {0};
+    
     uint16_t iCRC = 0;
     CMD_TX_T cmd_tx;
     
@@ -619,19 +624,61 @@ void send_to_device(CMD_RX_T *cmd_rx)
             SystemUpdate();
             break;   
 
-        case CONTROLMOTOR:       
+        case CONTROLMOTOR:
+              xReturn = xTaskNotify( xHandleTaskMotor, /*ÈÎÎñ¾ä±ú*/
+                                     (uint32_t)&cmd_rx->cmd_data,
+                                     eSetValueWithOverwrite );/*¸²¸Çµ±Ç°Í¨Öª*/
+              
+              if( xReturn == pdPASS )
+              {
+//                DBG("AÃÅÈÎÎñÍ¨ÖªÏûÏ¢·¢ËÍ³É¹¦!\r\n");
+                dbh("A Send", (char *)cmd_rx->cmd_data, MAX_MOTOR_CMD_LEN);
+              }
+              else
+              {
+                //´íÎóÌáÊ¾£¬ÔİÊ±Î´×ö
+                DBG("AÃÅÈÎÎñÍ¨ÖªÏûÏ¢·¢ËÍÊ§°Ü!\r\n");
+                dbh("DOOR A", (char *)cmd_rx->cmd_data, MAX_MOTOR_CMD_LEN);                
+              }
+
+              return;
+
+
+            #if 0
              //Ïòµç»ú·¢ËÍ¿ØÖÆÖ¸Áî
             vTaskSuspend(xHandleTaskQueryMotor); //ÈôÊÇ²Ù×÷µç»ú£¬Ôò¹Øµôµç»ú²éÑ¯
 //            xSemaphoreGive( gBinarySem_Handle );    //ÊÍ·Å¶şÖµĞÅºÅÁ¿
             comSendBuf(COM4, cmd_rx->cmd_data,8);    
             dbh("SEND A",(char *)cmd_rx->cmd_data,8);
             return;//ÕâÀï²»ĞèÒªÏòÉÏÎ»»úÉÏËÍ£¬ÔÚÁíÍâÒ»¸öÈÎÎñÖĞ²ÅÉÏËÍ
+            #endif
         case DOOR_B:
+              xReturn = xTaskNotify( xHandleTaskRs485, /*ÈÎÎñ¾ä±ú*/
+                                     (uint32_t)&cmd_rx->cmd_data,
+                                     eSetValueWithOverwrite );/*¸²¸Çµ±Ç°Í¨Öª*/
+              
+              if( xReturn == pdPASS )
+              {
+//                DBG("BÃÅÈÎÎñÍ¨ÖªÏûÏ¢·¢ËÍ³É¹¦!\r\n");
+                dbh("B Send", (char *)cmd_rx->cmd_data, MAX_MOTOR_CMD_LEN);
+              }
+              else
+              {
+                //´íÎóÌáÊ¾£¬ÔİÊ±Î´×ö
+                  DBG("BÃÅÈÎÎñÍ¨ÖªÏûÏ¢·¢ËÍ³É¹¦!\r\n");
+                  dbh("DOOR B", (char *)cmd_rx->cmd_data, MAX_MOTOR_CMD_LEN);                
+              }              
+
+              return;        
+
+            #if 0
             //·¢¸øBÃÅ
             vTaskSuspend(xHandleTaskQueryMotor);//ÈôÊÇ²Ù×÷µç»ú£¬Ôò¹Øµôµç»ú²éÑ¯
 //            xSemaphoreGive( gBinarySem_Handle );    //ÊÍ·Å¶şÖµĞÅºÅÁ¿
             RS485_SendBuf(COM5,cmd_rx->cmd_data,8);            
             return;//ÕâÀï²»ĞèÒªÏòÉÏÎ»»úÉÏËÍ£¬ÔÚÁíÍâÒ»¸öÈÎÎñÖĞ²ÅÉÏËÍ
+            #endif
+            
 
         default:
             init_serial_boot(); 

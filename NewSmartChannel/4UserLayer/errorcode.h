@@ -37,12 +37,14 @@ typedef enum {
     COMM_PARSE_ERR,     //指令解析失败
     COMM_CRC_ERR,      //解析指令，CRC校验失败
     FLASH_W_ERR,        //写FLASH失败
-    CJSON_CREATE_ERR = 512,   //创建cjson对象失败
+    CJSON_CREATE_ERR = 32,   //创建cjson对象失败
     //韦根读卡错误代码
-    READ_ERR = 1000,
+    READ_ERR = 64,
     //QR扫码器错误代码
     //A门电机错误代码
-    //B门电机错误代码   
+    MOTOR_A_ERR = 128,
+    //B门电机错误代码 
+    MOTOR_B_ERR = 192
     //错误代码大于2000，上位机会发复位指令
 
 } SYSERRORCODE_E;

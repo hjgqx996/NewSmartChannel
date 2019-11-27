@@ -81,6 +81,7 @@
 #define DEV_SENSOR                      0x02
 #define DEV_HEARTBEAT                   0x03
 
+#define MAX_MOTOR_CMD_LEN               0x08
 
 
 #define JSON_PACK_MAX                   600
@@ -144,9 +145,6 @@ typedef struct
 
 
 
-
-
-
 static RECVHOST_T gRecvHost;
 
 //static CMD_TX_T gcmd_tx;
@@ -160,6 +158,8 @@ extern SemaphoreHandle_t  gxMutex;
 
 
 extern TaskHandle_t xHandleTaskQueryMotor;      //电机状态查询
+extern TaskHandle_t xHandleTaskMotor ;    //电机控制
+extern TaskHandle_t xHandleTaskRs485 ;    //B门电机
 
 
 

@@ -51,12 +51,15 @@
 #define KEY_OPEN_DOOR_B_PRES 	4	//B门开门键按下
 
 
+#define KEY_ON	1
+#define KEY_OFF	0
 
 
 
 void bsp_key_Init(void);	//IO初始化
 uint8_t bsp_key_Scan(uint8_t);  		//按键扫描函数		
 
+uint8_t bsp_Gpio_Scan(GPIO_TypeDef* GPIOx,uint16_t GPIO_Pin);
 
 #endif
 

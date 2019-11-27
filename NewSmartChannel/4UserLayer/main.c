@@ -23,11 +23,11 @@
 #include "def.h"
 
 /*----------------------------------------------*
- * 宏定义                                       *
+ * 宏定义  
  *----------------------------------------------*/
+#define ULONG_MAX 0xffffffffUL
+
 //任务优先级   
-
-
 #define LED_TASK_PRIO	    ( tskIDLE_PRIORITY)
 #define HANDSHAKE_TASK_PRIO	( tskIDLE_PRIORITY)
 #define QUERYMOTOR_TASK_PRIO ( tskIDLE_PRIORITY)
@@ -57,16 +57,16 @@
 
 
 #define LED_STK_SIZE 		(1024)
-#define MOTOR_STK_SIZE 		(1024) 
+#define MOTOR_STK_SIZE 		(1024*1) 
 #define CMD_STK_SIZE 		(1024*1)
 #define INFRARED_STK_SIZE 	(1024)
-#define RS485_STK_SIZE 		(1024)
+#define RS485_STK_SIZE 		(1024*1)
 #define START_STK_SIZE 	    (512)
 #define QR_STK_SIZE 		(1024)
 #define READER_STK_SIZE     (1024)
 #define HANDSHAKE_STK_SIZE  (1024)
 #define KEY_STK_SIZE        (1024)
-#define QUERYMOTOR_STK_SIZE      (512)
+//#define QUERYMOTOR_STK_SIZE      (512)
 
 //事件标志
 #define TASK_BIT_0	 (1 << 0)
@@ -80,23 +80,21 @@
 #define TASK_BIT_8	 (1 << 8)
 
 //读取电机状态最大次数
-#define READ_MOTOR_STATUS_TIMES 20
+#define READ_MOTOR_STATUS_TIMES 8
 
 
 //#define TASK_BIT_ALL (TASK_BIT_0 | TASK_BIT_1 | TASK_BIT_2 | TASK_BIT_3|TASK_BIT_4 | TASK_BIT_5 | TASK_BIT_6 )
-#define TASK_BIT_ALL ( TASK_BIT_0 | TASK_BIT_1 | TASK_BIT_2 |TASK_BIT_3|TASK_BIT_4|TASK_BIT_5|TASK_BIT_6|TASK_BIT_7|TASK_BIT_8)
+#define TASK_BIT_ALL ( TASK_BIT_0 | TASK_BIT_1 | TASK_BIT_2 |TASK_BIT_3|TASK_BIT_4|TASK_BIT_5|TASK_BIT_6|TASK_BIT_7)
 
 /*----------------------------------------------*
  * 模块级变量                                   *
  *----------------------------------------------*/
 //任务句柄
 static TaskHandle_t xHandleTaskLed = NULL;      //LED灯
-static TaskHandle_t xHandleTaskMotor = NULL;    //电机控制
 static TaskHandle_t xHandleTaskCmd = NULL;      //android通讯
 static TaskHandle_t xHandleTaskInfrared = NULL; //红外感映
 static TaskHandle_t xHandleTaskReader = NULL;   //韦根读卡器
 static TaskHandle_t xHandleTaskQr = NULL;       //二维码读头
-static TaskHandle_t xHandleTaskRs485 = NULL;    //B门电机
 static TaskHandle_t xHandleTaskStart = NULL;    //看门狗
 static TaskHandle_t xHandleTaskHandShake = NULL;    // 握手
 static TaskHandle_t xHandleTaskKey = NULL;      //B门按键
@@ -133,9 +131,12 @@ static void vTaskRs485(void *pvParameters);
 static void vTaskReader(void *pvParameters);
 static void vTaskQR(void *pvParameters);
 static void vTaskStart(void *pvParameters);
-static void vTaskQueryMotor(void *pvParameters);
+//static void vTaskQueryMotor(void *pvParameters);
 //上送开机次数
 static void vTaskHandShake(void *pvParameters);
+
+
+
 
 
 static void AppTaskCreate(void);
@@ -201,12 +202,12 @@ static void AppTaskCreate (void)
                 (TaskHandle_t*  )&xHandleTaskLed);                   
 
     //查询电机状态
-    xTaskCreate((TaskFunction_t )vTaskQueryMotor,
-                (const char*    )"vQueryMotor",       
-                (uint16_t       )QUERYMOTOR_STK_SIZE, 
-                (void*          )NULL,              
-                (UBaseType_t    )QUERYMOTOR_TASK_PRIO,    
-                (TaskHandle_t*  )&xHandleTaskQueryMotor);  
+//    xTaskCreate((TaskFunction_t )vTaskQueryMotor,
+//                (const char*    )"vQueryMotor",       
+//                (uint16_t       )QUERYMOTOR_STK_SIZE, 
+//                (void*          )NULL,              
+//                (UBaseType_t    )QUERYMOTOR_TASK_PRIO,    
+//                (TaskHandle_t*  )&xHandleTaskQueryMotor);  
     
     //创建电机信息返回任务
     xTaskCreate((TaskFunction_t )vTaskMortorToHost,     
@@ -440,28 +441,19 @@ static void vTaskStart(void *pvParameters)
 
 
 //查询电机状态
-void vTaskQueryMotor(void *pvParameters)
-{
-    uint8_t ReadStatus[8] = { 0x01,0x03,0x07,0x0C,0x00,0x01,0x45,0x7D };
-//    BaseType_t xReturn = pdPASS;
-    
-    while(1)
-    {
-//        xReturn = xSemaphoreTake(gBinarySem_Handle,portMAX_DELAY); 
-
-//        if(xReturn == pdFALSE)
-//        {
-            comSendBuf(COM4, ReadStatus,8);//查询A电机状态
-            RS485_SendBuf(COM5,ReadStatus,8);//查询B电机状态
-           
-//        }
-     
-		/* 发送事件标志，表示任务正常运行 */        
-		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_8);  
-        vTaskDelay(500);     
-    }
-
-} 
+//void vTaskQueryMotor(void *pvParameters)
+//{
+//    uint8_t ReadStatus[8] = { 0x01,0x03,0x07,0x0C,0x00,0x01,0x45,0x7D };    
+//    while(1)
+//    {
+//        comSendBuf(COM4, ReadStatus,8);//查询A电机状态
+//        RS485_SendBuf(COM5,ReadStatus,8);//查询B电机状态
+//     
+//		/* 发送事件标志，表示任务正常运行 */        
+//		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_8);  
+//        vTaskDelay(500);     
+//    }
+//} 
 
 //LED任务函数 
 void vTaskLed(void *pvParameters)
@@ -477,7 +469,7 @@ void vTaskLed(void *pvParameters)
     {  
         if(g500usCount == 0)
         {
-            g500usCount = 1*60*1000;//30ms
+            g500usCount = 5*60*1000*2;//1min
 
             App_Printf("\r\n=================================================\r\n");
             App_Printf("任务名      任务状态 优先级   剩余栈 任务序号\r\n");
@@ -521,7 +513,9 @@ void vTaskLed(void *pvParameters)
     }
 }   
 
+
 //motor to host 任务函数
+#if 0
 void vTaskMortorToHost(void *pvParameters)
 {     
     uint8_t buf[8] = {0};
@@ -581,6 +575,212 @@ void vTaskMortorToHost(void *pvParameters)
 
 }
 
+#endif
+
+void vTaskMortorToHost(void *pvParameters)
+{  
+    BaseType_t xReturn = pdTRUE;/* 定义一个创建信息返回值，默认为pdPASS */
+    char *recvbuff;
+    uint32_t i = 0;
+    uint8_t buf[8] = {0};
+    uint16_t readLen = 0;
+    uint16_t iCRC = 0;
+    uint8_t crcBuf[2] = {0};
+
+    uint8_t ReadStatus[MAX_MOTOR_CMD_LEN] = { 0x01,0x03,0x07,0x0C,0x00,0x01,0x45,0x7D };
+    
+    while (1)
+    {   
+
+        //获取任务通知，等待1000个时间节拍，获取到，则执行上位机指令，获取不到，则执行状态查询
+		xReturn=xTaskNotifyWait(0x0,			//进入函数的时候不清除任务bit
+                            ULONG_MAX,	        //退出函数的时候清除所有的bit
+                            (uint32_t *)&recvbuff,//保存任务通知值                    
+                            (TickType_t)300);	//阻塞时间
+                            
+        if( pdTRUE == xReturn )
+        {
+            dbh("A Recv：",recvbuff, MAX_MOTOR_CMD_LEN);
+            comSendBuf(COM4, (uint8_t *)recvbuff,MAX_MOTOR_CMD_LEN);//操作A电机
+        }
+    	else
+        {
+            comSendBuf(COM4, ReadStatus,MAX_MOTOR_CMD_LEN);//查询A电机状态
+        }   
+
+        vTaskDelay(100);
+        
+        readLen = comRecvBuff(COM4,buf,8);       
+
+        if(readLen == 7 || readLen == 8)
+        {            
+            iCRC = CRC16_Modbus(buf, readLen-2);  
+
+            crcBuf[0] = iCRC >> 8;
+            crcBuf[1] = iCRC & 0xff;  
+
+            if(crcBuf[1] == buf[readLen-2] && crcBuf[0] == buf[readLen-1])
+            { 								 
+                send_to_host(CONTROLMOTOR,buf,readLen);              
+                Motro_A = 0;
+            }
+            else
+            {
+                dbh("door a check data error", (char *)buf, readLen);
+            }
+        } 
+        else
+        {
+            if(i++ == READ_MOTOR_STATUS_TIMES)
+            {
+                i = 0;
+                App_Printf("door a connect error!\r\n"); 
+                SendAsciiCodeToHost(ERRORINFO,MOTOR_A_ERR,"Motor A fault");
+            }
+            
+        }
+        
+        /* 发送事件标志，表示任务正常运行 */        
+        xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_1);
+      
+    }
+
+}
+
+#if 0
+void vTaskRs485(void *pvParameters)
+{
+    uint8_t buf[8] = {0};
+    uint8_t readLen = 0;
+    uint16_t iCRC = 0;
+    uint8_t crcBuf[2] = {0};
+
+    #ifdef USEQUEUE
+    QUEUE_TO_HOST_T *ptInfraredToHost; 
+    ptInfraredToHost = &gQueueToHost;
+    #endif
+    
+    while (1)
+    {
+        readLen = RS485_Recv(COM5,buf,8);       
+
+        if(readLen == 7 || readLen == 8)
+        {            
+            iCRC = CRC16_Modbus(buf, readLen-2);  
+
+            crcBuf[0] = iCRC >> 8;
+            crcBuf[1] = iCRC & 0xff;  
+
+            if(crcBuf[1] == buf[readLen-2] && crcBuf[0] == buf[readLen-1])
+            { 
+                #ifdef USEQUEUE
+                ptInfraredToHost->cmd = DOOR_B;
+                memcpy(ptInfraredToHost->data,buf,readLen);
+            
+    			/* 使用消息队列实现指针变量的传递 */
+    			if(xQueueSend(xTransQueue,              /* 消息队列句柄 */
+    						 (void *) &ptInfraredToHost,   /* 发送结构体指针变量ptQueueToHost的地址 */
+    						 (TickType_t)10) != pdPASS )
+    			{
+                    DBG("向xTransQueue发送数据失败，即使等待了10个时钟节拍\r\n");                
+                } 
+                else
+                {                 
+    				dbh("DOOR_B",(char *)buf,readLen);
+                }   
+                #endif
+            
+                send_to_host(DOOR_B,buf,readLen);
+                vTaskResume(xHandleTaskQueryMotor);//重启状态查询线程
+                Motro_B = 0;
+            }            
+        }
+        
+		/* 发送事件标志，表示任务正常运行 */        
+		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_6);
+        
+        vTaskDelay(100);
+    }
+
+}
+#endif
+
+void vTaskRs485(void *pvParameters)
+{
+
+    BaseType_t xReturn = pdTRUE;/* 定义一个创建信息返回值，默认为pdPASS */
+    char *recvbuff;
+    uint32_t i = 0;
+    uint8_t ReadStatus[MAX_MOTOR_CMD_LEN] = { 0x01,0x03,0x07,0x0C,0x00,0x01,0x45,0x7D };
+
+    uint8_t buf[8] = {0};
+    uint8_t readLen = 0;
+    uint16_t iCRC = 0;
+    uint8_t crcBuf[2] = {0};
+    
+    while (1)
+    {
+
+        //获取任务通知，等待1000个时间节拍，获取到，则执行上位机指令，获取不到，则执行状态查询
+        xReturn=xTaskNotifyWait(0x0,            //进入函数的时候不清除任务bit
+                            ULONG_MAX,          //退出函数的时候清除所有的bit
+                            (uint32_t *)&recvbuff,//保存任务通知值                    
+                            (TickType_t)300);  //阻塞时间,485比串口要慢一些
+                            
+        if( pdTRUE == xReturn )
+        {
+            dbh("B Recv：",(char *)recvbuff, MAX_MOTOR_CMD_LEN);
+            RS485_SendBuf(COM5, (uint8_t *)recvbuff,MAX_MOTOR_CMD_LEN);//操作B电机
+        }
+        else
+        {
+            RS485_SendBuf(COM5, ReadStatus,MAX_MOTOR_CMD_LEN);//查询B电机状态          
+        }   
+        
+        vTaskDelay(200);
+    
+        readLen = RS485_Recv(COM5,buf,8);       
+
+        if(readLen == 7 || readLen == 8)
+        {                
+            iCRC = CRC16_Modbus(buf, readLen-2);  
+
+            crcBuf[0] = iCRC >> 8;
+            crcBuf[1] = iCRC & 0xff;  
+
+            if(crcBuf[1] == buf[readLen-2] && crcBuf[0] == buf[readLen-1])
+            {       
+                send_to_host(DOOR_B,buf,readLen);
+                Motro_B = 0;
+            } 
+            else
+            {
+                dbh("door b check data error", (char *)buf, readLen);
+            }
+        }
+        else
+        {
+//            DBG("没有收到B门状态:%d\r\n",i);
+            if(i++ == READ_MOTOR_STATUS_TIMES)
+            {
+                i = 0;
+                App_Printf("door b connect error!\r\n"); 
+                SendAsciiCodeToHost(ERRORINFO,MOTOR_B_ERR,"Motor B fault");
+            }
+
+        }
+        
+		/* 发送事件标志，表示任务正常运行 */        
+		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_6);        
+      
+    }
+
+}
+
+
+
+
+#if 0
 void vTaskKey(void *pvParameters)
 {
 
@@ -590,6 +790,222 @@ void vTaskKey(void *pvParameters)
 //    uint8_t OpenDoor_R[8] =  { 0x01,0x06,0x08,0x0C,0x00,0x03,0x0B,0xA8 };
 //    uint8_t QuestStatus[8] =  { 0x01,0x03,0x07,0x0C,0x00,0x01,0x45,0x7D };
 //    uint8_t MotorReset[8] =  { 0x01,0x06,0x08,0x0C,0x00,0x07,0x0A,0x6B };    
+	uint8_t ucKeyCode;
+    BaseType_t xReturn = pdPASS;/* 定义一个创建信息返回值，默认为pdPASS */
+    
+    while(1)
+    {
+		ucKeyCode = bsp_key_Scan(0);  
+
+        DBG("1 ->%d\r\n",GPIO_ReadInputDataBit(GPIO_PORT_KEY,GPIO_PIN_KEY_DOOR_B));
+        DBG("2 ->%d\r\n",GPIO_ReadInputDataBit(GPIO_PORT_KEY,GPIO_PIN_FIREFIGHTING));
+        DBG("3 ->%d\r\n",GPIO_ReadInputDataBit(GPIO_PORT_OPEN_DOOR,GPIO_PIN_OPEN_DOOR_A));
+        DBG("4 ->%d\r\n",GPIO_ReadInputDataBit(GPIO_PORT_OPEN_DOOR,GPIO_PIN_OPEN_DOOR_B));
+
+		if (ucKeyCode != KEY_NONE)
+		{                
+			switch (ucKeyCode)
+			{
+				/* 开门键按下执行向上位机发送开门请求 */
+				case KEY_DOOR_B_PRES:	 
+                    SendAsciiCodeToHost(REQUEST_OPEN_DOOR_B,NO_ERR,"Request to open the door");
+					break;	
+                case KEY_FIREFIGHTING_PRES: 
+                    xReturn = xTaskNotify( xHandleTaskMotor, /*任务句柄*/
+                                           (uint32_t)&OpenDoor,
+                                           eSetValueWithOverwrite );/*覆盖当前通知*/
+                    
+                    if( xReturn == pdPASS )
+                    {                 
+                      DBG("A门任务通知消息发送成功!\r\n");
+                      dbh("DOOR A", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+                    }
+                    else
+                    {
+                      DBG("1KEY_FIREFIGHTING_PRES ERROR\r\n");  
+                      break;
+                    }  
+
+                   xReturn = xTaskNotify( xHandleTaskRs485, /*任务句柄*/
+                                          (uint32_t)&OpenDoor,
+                                          eSetValueWithOverwrite );/*覆盖当前通知*/
+                   
+                   if( xReturn == pdPASS )
+                   {
+                       //向android发送消防联动的消息
+                       SendAsciiCodeToHost(FIREFIGHTINGLINKAGE,NO_ERR,"Fire fighting linkage");
+
+                        DBG("B门任务通知消息发送成功!\r\n");
+                        dbh("DOOR B", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+                   }
+                   else
+                   {
+                      DBG("2 KEY_FIREFIGHTING_PRES ERROR\r\n");
+                   }
+                    break;
+                case KEY_OPEN_DOOR_A_PRES: 
+//                    comSendBuf(COM4, OpenDoor,8);//打开A门
+
+                    xReturn = xTaskNotify( xHandleTaskMotor, /*任务句柄*/
+                                           (uint32_t)&OpenDoor,
+                                           eSetValueWithOverwrite );/*覆盖当前通知*/
+                    
+                    if( xReturn == pdPASS )
+                    {
+                      //Open door a manually
+                        SendAsciiCodeToHost(MANUALLY_OPEN_DOOR_A,NO_ERR,"Open door A manually"); 
+                  
+                      DBG("A门任务通知消息发送成功!\r\n");
+                      dbh("DOOR A", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+                    }
+                    else
+                    {
+                      //错误提示，暂时未做
+                      DBG("KEY_OPEN_DOOR_A_PRES ERROR\r\n");
+                    }              
+
+                    break;
+                case KEY_OPEN_DOOR_B_PRES:
+//                    RS485_SendBuf(COM5,OpenDoor,8);//打开B门
+
+                   xReturn = xTaskNotify( xHandleTaskRs485, /*任务句柄*/
+                                          (uint32_t)&OpenDoor,
+                                          eSetValueWithOverwrite );/*覆盖当前通知*/
+                   
+                   if( xReturn == pdPASS )
+                   {
+                        //Open door b manually
+                        SendAsciiCodeToHost(MANUALLY_OPEN_DOOR_B,NO_ERR,"Open door B manually");  
+
+                        DBG("B门任务通知消息发送成功!\r\n");
+                        dbh("DOOR B", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+                   } 
+                   else
+                   {
+                       DBG("KEY_OPEN_DOOR_B_PRES ERROR\r\n");
+                   }
+                    break;			
+				/* 其他的键值不处理 */
+				default:   
+				    App_Printf("KEY_default\r\n");
+					break;
+			}
+		}	
+
+		/* 发送事件标志，表示任务正常运行 */        
+		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_7);  
+        
+		vTaskDelay(50);
+	}  
+
+}
+#endif
+
+#if 0
+
+
+void vTaskKey(void *pvParameters)
+{
+    uint8_t OpenDoor[8] =  { 0x01,0x06,0x08,0x0C,0x00,0x02,0xCA,0x68 }; 
+	
+    BaseType_t xReturn = pdPASS;/* 定义一个创建信息返回值，默认为pdPASS */
+    
+    while(1)
+    {
+        if(bsp_Gpio_Scan(GPIO_PORT_KEY,GPIO_PIN_FIREFIGHTING) == KEY_ON)
+        {
+            //消防联动
+            xReturn = xTaskNotify( xHandleTaskMotor, /*任务句柄*/
+                                   (uint32_t)&OpenDoor,
+                                   eSetValueWithOverwrite );/*覆盖当前通知*/
+            
+            if( xReturn == pdPASS )
+            {                 
+              DBG("A门任务通知消息发送成功!\r\n");
+              dbh("DOOR A", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+            }
+            else
+            {
+              break;
+            }  
+
+           xReturn = xTaskNotify( xHandleTaskRs485, /*任务句柄*/
+                                  (uint32_t)&OpenDoor,
+                                  eSetValueWithOverwrite );/*覆盖当前通知*/
+           
+           if( xReturn == pdPASS )
+           {
+               //向android发送消防联动的消息
+               SendAsciiCodeToHost(FIREFIGHTINGLINKAGE,NO_ERR,"Fire fighting linkage");
+
+               DBG("B门任务通知消息发送成功!\r\n");
+               dbh("DOOR B", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+           }            
+        }
+
+        if(bsp_Gpio_Scan(GPIO_PORT_KEY,GPIO_PIN_KEY_DOOR_B) == KEY_ON)
+        {
+            //B门开门请求            
+            SendAsciiCodeToHost(REQUEST_OPEN_DOOR_B,NO_ERR,"Request to open the door");
+        }
+
+        if(bsp_Gpio_Scan(GPIO_PORT_OPEN_DOOR,GPIO_PIN_OPEN_DOOR_A) == KEY_ON)
+        {
+            //手动开A门
+            xReturn = xTaskNotify( xHandleTaskMotor, /*任务句柄*/
+                                   (uint32_t)&OpenDoor,
+                                   eSetValueWithOverwrite );/*覆盖当前通知*/
+            
+            if( xReturn == pdPASS )
+            {
+              //Open door a manually
+                SendAsciiCodeToHost(MANUALLY_OPEN_DOOR_A,NO_ERR,"Open door A manually"); 
+          
+              DBG("A门任务通知消息发送成功!\r\n");
+              dbh("DOOR A", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+            }
+            else
+            {
+              //错误提示，暂时未做
+            }              
+        }
+
+        if(bsp_Gpio_Scan(GPIO_PORT_OPEN_DOOR,GPIO_PIN_OPEN_DOOR_B) == KEY_ON)
+        {
+            //手动开B门
+           xReturn = xTaskNotify( xHandleTaskRs485, /*任务句柄*/
+                                  (uint32_t)&OpenDoor,
+                                  eSetValueWithOverwrite );/*覆盖当前通知*/
+           
+           if( xReturn == pdPASS )
+           {
+                //Open door b manually
+                SendAsciiCodeToHost(MANUALLY_OPEN_DOOR_B,NO_ERR,"Open door B manually");  
+
+                DBG("B门任务通知消息发送成功!\r\n");
+                dbh("DOOR B", (char *)OpenDoor, MAX_MOTOR_CMD_LEN);
+           } 
+           else
+           {
+             //错误提示，暂时未做
+           }  
+                       
+        }
+
+		/* 发送事件标志，表示任务正常运行 */        
+		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_7);  
+        
+		vTaskDelay(20);
+	}  
+
+}
+#endif
+
+
+#if 1
+void vTaskKey(void *pvParameters)
+{
+    
 	uint8_t ucKeyCode;
     
     while(1)
@@ -603,24 +1019,8 @@ void vTaskKey(void *pvParameters)
 				/* 开门键按下执行向上位机发送开门请求 */
 				case KEY_DOOR_B_PRES:	 
                     SendAsciiCodeToHost(REQUEST_OPEN_DOOR_B,NO_ERR,"Request to open the door");
-					break;	
-                case KEY_FIREFIGHTING_PRES:
-                    //开门
-                    comSendBuf(COM4, OpenDoor,8);//打开A门
-                    RS485_SendBuf(COM5,OpenDoor,8);//打开B门                    
-                    //向android发送消防联动的消息
-                    SendAsciiCodeToHost(FIREFIGHTINGLINKAGE,NO_ERR,"Fire fighting linkage");                    
-                    break;
-                case KEY_OPEN_DOOR_A_PRES:
-                    //Open door a manually
-                    SendAsciiCodeToHost(MANUALLY_OPEN_DOOR_A,NO_ERR,"Open door A manually");                      
-                    comSendBuf(COM4, OpenDoor,8);//打开A门
-                    break;
-                case KEY_OPEN_DOOR_B_PRES:
-                    //Open door b manually
-                    SendAsciiCodeToHost(MANUALLY_OPEN_DOOR_B,NO_ERR,"Open door B manually");  
-                    RS485_SendBuf(COM5,OpenDoor,8);//打开B门
-                    break;			
+					break;			
+			
 				/* 其他的键值不处理 */
 				default:   
 				App_Printf("KEY_default\r\n");
@@ -636,6 +1036,8 @@ void vTaskKey(void *pvParameters)
 	}  
 
 }
+#endif
+
 
 
 void vTaskMsgPro(void *pvParameters)
@@ -702,63 +1104,6 @@ void vTaskInfrared(void *pvParameters)
         vTaskDelay(10);
     }
 }
-
-void vTaskRs485(void *pvParameters)
-{
-    uint8_t buf[8] = {0};
-    uint8_t readLen = 0;
-    uint16_t iCRC = 0;
-    uint8_t crcBuf[2] = {0};
-
-    #ifdef USEQUEUE
-    QUEUE_TO_HOST_T *ptInfraredToHost; 
-    ptInfraredToHost = &gQueueToHost;
-    #endif
-    
-    while (1)
-    {
-        readLen = RS485_Recv(COM5,buf,8);       
-
-        if(readLen == 7 || readLen == 8)
-        {            
-            iCRC = CRC16_Modbus(buf, readLen-2);  
-
-            crcBuf[0] = iCRC >> 8;
-            crcBuf[1] = iCRC & 0xff;  
-
-            if(crcBuf[1] == buf[readLen-2] && crcBuf[0] == buf[readLen-1])
-            { 
-                #ifdef USEQUEUE
-                ptInfraredToHost->cmd = DOOR_B;
-                memcpy(ptInfraredToHost->data,buf,readLen);
-            
-    			/* 使用消息队列实现指针变量的传递 */
-    			if(xQueueSend(xTransQueue,              /* 消息队列句柄 */
-    						 (void *) &ptInfraredToHost,   /* 发送结构体指针变量ptQueueToHost的地址 */
-    						 (TickType_t)10) != pdPASS )
-    			{
-                    DBG("向xTransQueue发送数据失败，即使等待了10个时钟节拍\r\n");                
-                } 
-                else
-                {                 
-    				dbh("DOOR_B",(char *)buf,readLen);
-                }   
-                #endif
-            
-                send_to_host(DOOR_B,buf,readLen);
-                vTaskResume(xHandleTaskQueryMotor);//重启状态查询线程
-                Motro_B = 0;
-            }            
-        }
-        
-		/* 发送事件标志，表示任务正常运行 */        
-		xEventGroupSetBits(xCreatedEventGroup, TASK_BIT_6);
-        
-        vTaskDelay(100);
-    }
-
-}
-
 
 void vTaskReader(void *pvParameters)
 { 
