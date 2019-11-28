@@ -601,16 +601,16 @@ void vTaskMortorToHost(void *pvParameters)
         if( pdTRUE == xReturn )
         {
             dbh("A Recv：",recvbuff, MAX_MOTOR_CMD_LEN);
-            comSendBuf(COM4, (uint8_t *)recvbuff,MAX_MOTOR_CMD_LEN);//操作A电机
+            RS485_SendBuf(COM4, (uint8_t *)recvbuff,MAX_MOTOR_CMD_LEN);//操作A电机
         }
     	else
         {
-            comSendBuf(COM4, ReadStatus,MAX_MOTOR_CMD_LEN);//查询A电机状态
+            RS485_SendBuf(COM4, ReadStatus,MAX_MOTOR_CMD_LEN);//查询A电机状态
         }   
 
         vTaskDelay(100);
         
-        readLen = comRecvBuff(COM4,buf,8);       
+        readLen = RS485_Recv(COM4,buf,8);       
 
         if(readLen == 7 || readLen == 8)
         {            

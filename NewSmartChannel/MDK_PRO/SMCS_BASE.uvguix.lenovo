@@ -3615,9 +3615,15 @@
       </Doc>
       <Doc>
         <Name>..\4UserLayer\comm.h</Name>
+<<<<<<< HEAD
         <ColumnNumber>53</ColumnNumber>
         <TopLine>141</TopLine>
         <CurrentLine>160</CurrentLine>
+=======
+        <ColumnNumber>28</ColumnNumber>
+        <TopLine>141</TopLine>
+        <CurrentLine>148</CurrentLine>
+>>>>>>> 4da08ea6b7f1b5363594fd08c4e103fb67482a54
         <Folding>1</Folding>
         <ContractedFolders></ContractedFolders>
         <PaneID>0</PaneID>
