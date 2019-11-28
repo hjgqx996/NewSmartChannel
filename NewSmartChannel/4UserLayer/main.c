@@ -596,7 +596,7 @@ void vTaskMortorToHost(void *pvParameters)
 		xReturn=xTaskNotifyWait(0x0,			//进入函数的时候不清除任务bit
                             ULONG_MAX,	        //退出函数的时候清除所有的bit
                             (uint32_t *)&recvbuff,//保存任务通知值                    
-                            (TickType_t)300);	//阻塞时间
+                            (TickType_t)1000);	//阻塞时间
                             
         if( pdTRUE == xReturn )
         {
@@ -725,7 +725,7 @@ void vTaskRs485(void *pvParameters)
         xReturn=xTaskNotifyWait(0x0,            //进入函数的时候不清除任务bit
                             ULONG_MAX,          //退出函数的时候清除所有的bit
                             (uint32_t *)&recvbuff,//保存任务通知值                    
-                            (TickType_t)300);  //阻塞时间,485比串口要慢一些
+                            (TickType_t)1000);  //阻塞时间,485比串口要慢一些
                             
         if( pdTRUE == xReturn )
         {
@@ -737,7 +737,7 @@ void vTaskRs485(void *pvParameters)
             RS485_SendBuf(COM5, ReadStatus,MAX_MOTOR_CMD_LEN);//查询B电机状态          
         }   
         
-        vTaskDelay(200);
+        vTaskDelay(100);
     
         readLen = RS485_Recv(COM5,buf,8);       
 
